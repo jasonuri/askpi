@@ -1,0 +1,8 @@
+# robots.txt for hellouri.ai
+# Allow all web crawlers to access the site
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.hellouri.ai/sitemap.xml

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Uri OG Image Template</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* OG Image dimensions: 1200x630 */
+    .og-container {
+      width: 1200px;
+      height: 630px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+      position: relative;
+      overflow: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Decorative gradient orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.4;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: #65ec87;
+      top: -100px;
+      right: -50px;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: #65ec87;
+      bottom: -100px;
+      left: -50px;
+      opacity: 0.25;
+    }
+
+    /* Grid pattern overlay */
+    .grid-pattern {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* Content container */
+    .content {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 80px;
+    }
+
+    /* Logo */
+    .logo {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 72px;
+      color: #65ec87;
+      font-weight: 400;
+      margin-bottom: 30px;
+      letter-spacing: -2px;
+    }
+
+    /* Main headline */
+    .headline {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 64px;
+      color: white;
+      line-height: 1.15;
+      margin-bottom: 24px;
+      max-width: 800px;
+    }
+
+    .headline .highlight {
+      color: #65ec87;
+      font-style: italic;
+    }
+
+    /* Tagline */
+    .tagline {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.7);
+      max-width: 650px;
+      line-height: 1.5;
+    }
+
+    /* Domain badge */
+    .domain {
+      position: absolute;
+      bottom: 50px;
+      right: 80px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 12px 24px;
+      border-radius: 50px;
+      color: white;
+      font-size: 18px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="og-container">
+    <!-- Decorative elements -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="grid-pattern"></div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="logo">uri</div>
+      <h1 class="headline">
+        Gen Z Insights in <span class="highlight">Days</span>, Not Months
+      </h1>
+      <p class="tagline">
+        AI-powered consumer research platform helping businesses understand Gen Z through real-time insights and authentic research.
+      </p>
+    </div>
+
+    <!-- Domain badge -->
+    <div class="domain">hellouri.ai</div>
+  </div>
+
+  <!-- Instructions for generating the PNG -->
+  <!--
+    TO GENERATE THE OG IMAGE:
+
+    Option 1: Browser Screenshot
+    1. Open this file in Chrome
+    2. Right-click > Inspect > Select the .og-container element
+    3. Right-click the element > Capture node screenshot
+    4. Save as og-image.png
+
+    Option 2: Use a tool like Puppeteer or Playwright
+
+    Option 3: Online tools
+    - https://htmlcsstoimage.com/
+    - Paste this HTML and download as PNG at 1200x630
+
+    After generating, place og-image.png in the /public folder
+  -->
+</body>
+</html>
