@@ -47,7 +47,7 @@ export function Problem({ showOnlyHeader = false, showOnlyCards = false }: Probl
   // Hooks must be called at the top level, not conditionally
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
-    target: scrollContainerRef,
+    ...(showOnlyCards ? { target: scrollContainerRef } : {}),
     offset: ["start start", "end end"]
   });
 
