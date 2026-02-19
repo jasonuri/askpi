@@ -7,8 +7,96 @@ import * as kv from "./kv_store.tsx";
 const app = new Hono();
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const ALLOWED_ORIGINS = new Set([
+  "https://www.askphi.ai",
+  "https://askphi.ai",
+  "http://localhost:3000",
+]);
+
+const FREE_EMAIL_DOMAINS = new Set([
+  "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com",
+  "icloud.com", "protonmail.com", "proton.me", "mail.com", "zoho.com",
+  "yandex.com", "yandex.ru", "gmx.com", "gmx.net", "fastmail.com",
+  "tutanota.com", "tuta.com", "inbox.com", "live.com", "msn.com",
+  "me.com", "mac.com", "hey.com", "qq.com", "163.com", "126.com",
+  "sina.com", "rediffmail.com", "web.de", "googlemail.com",
+]);
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function getClientIp(c: any): string {
+  return (
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+    c.req.header("cf-connecting-ip") ||
+    c.req.header("x-real-ip") ||
+    "unknown"
+  );
+}
+
+function isWorkEmail(email: string): boolean {
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return false;
+  return !FREE_EMAIL_DOMAINS.has(domain);
+}
+
+function isAllowedOrigin(origin: string): boolean {
+  return ALLOWED_ORIGINS.has(origin);
+}
+
+/**
+ * Fixed-window rate limiter backed by the KV store.
+ * Returns Hono middleware.
+ */
+function rateLimit(config: { endpoint: string; limit: number; windowMs: number }) {
+  return async (c: any, next: () => Promise<void>) => {
+    const ip = getClientIp(c);
+    const windowId = Math.floor(Date.now() / config.windowMs);
+    const key = `rate:${config.endpoint}:${ip}:${windowId}`;
+    const prevKey = `rate:${config.endpoint}:${ip}:${windowId - 1}`;
+
+    try {
+      const current = (await kv.get(key)) as number | null;
+      const count = current ?? 0;
+
+      if (count >= config.limit) {
+        const resetAt = (windowId + 1) * config.windowMs;
+        c.header("X-RateLimit-Limit", String(config.limit));
+        c.header("X-RateLimit-Remaining", "0");
+        c.header("X-RateLimit-Reset", String(Math.ceil(resetAt / 1000)));
+        return c.json({ error: "Too many requests. Please try again later." }, 429);
+      }
+
+      // Increment counter
+      await kv.set(key, count + 1);
+
+      // Set rate limit headers
+      c.header("X-RateLimit-Limit", String(config.limit));
+      c.header("X-RateLimit-Remaining", String(config.limit - count - 1));
+      const resetAt = (windowId + 1) * config.windowMs;
+      c.header("X-RateLimit-Reset", String(Math.ceil(resetAt / 1000)));
+
+      // Lazy cleanup of previous window (fire-and-forget)
+      kv.del(prevKey).catch(() => {});
+    } catch (err) {
+      // If KV store fails, allow the request through (fail open)
+      console.error("Rate limit check failed:", err);
+    }
+
+    await next();
+  };
+}
+
+const HOUR = 60 * 60 * 1000;
+
+const teaserRateLimit = rateLimit({ endpoint: "teaser", limit: 5, windowMs: HOUR });
+const startRateLimit = rateLimit({ endpoint: "start", limit: 5, windowMs: HOUR });
+const unlockRateLimit = rateLimit({ endpoint: "unlock", limit: 10, windowMs: HOUR });
+const subscribeRateLimit = rateLimit({ endpoint: "subscribe", limit: 5, windowMs: HOUR });
 
 function getSupabase() {
   return createClient(
@@ -198,14 +286,14 @@ Start directly with the first bullet. No preamble or introduction.`;
 // Enable logger
 app.use('*', logger(console.log));
 
-// Enable CORS for all routes and methods
+// Enable CORS for allowed origins only
 app.use(
   "/*",
   cors({
-    origin: "*",
+    origin: (origin) => (isAllowedOrigin(origin) ? origin : ""),
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    exposeHeaders: ["Content-Length"],
+    exposeHeaders: ["Content-Length", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
     maxAge: 600,
   }),
 );
@@ -216,7 +304,7 @@ app.get("/make-server-e1b246ca/health", (c) => {
 });
 
 // Newsletter subscription endpoint
-app.post("/make-server-e1b246ca/subscribe", async (c) => {
+app.post("/make-server-e1b246ca/subscribe", subscribeRateLimit, async (c) => {
   try {
     const { email } = await c.req.json();
     
@@ -270,7 +358,7 @@ app.post("/make-server-e1b246ca/subscribe", async (c) => {
 // ---------------------------------------------------------------------------
 // POST /diagnostic/start — Analyze a website and produce ReportPart1
 // ---------------------------------------------------------------------------
-app.post("/make-server-e1b246ca/diagnostic/start", async (c) => {
+app.post("/make-server-e1b246ca/diagnostic/start", startRateLimit, async (c) => {
   const startTime = Date.now();
   try {
     const { websiteUrl, statedAudience } = await c.req.json();
@@ -309,7 +397,7 @@ app.post("/make-server-e1b246ca/diagnostic/start", async (c) => {
 
     // 3. Call Claude for ReportPart1
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-sonnet-4-6-20250514",
       max_tokens: 4096,
       messages: [
         {
@@ -383,7 +471,7 @@ Produce the JSON report now.`,
 // ---------------------------------------------------------------------------
 // POST /diagnostic/teaser — Stream a teaser preview via SSE
 // ---------------------------------------------------------------------------
-app.post("/make-server-e1b246ca/diagnostic/teaser", async (c) => {
+app.post("/make-server-e1b246ca/diagnostic/teaser", teaserRateLimit, async (c) => {
   try {
     const { websiteUrl, statedAudience } = await c.req.json();
 
@@ -435,7 +523,7 @@ app.post("/make-server-e1b246ca/diagnostic/teaser", async (c) => {
 
         try {
           const messageStream = anthropic.messages.stream({
-            model: "claude-sonnet-4-5-20250929",
+            model: "claude-sonnet-4-6-20250514",
             max_tokens: 1024,
             messages: [
               {
@@ -476,12 +564,15 @@ app.post("/make-server-e1b246ca/diagnostic/teaser", async (c) => {
       },
     });
 
+    const requestOrigin = c.req.header("origin") || "";
+    const corsOrigin = isAllowedOrigin(requestOrigin) ? requestOrigin : "";
+
     return new Response(stream, {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
-        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Origin": corsOrigin,
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
     });
@@ -494,7 +585,7 @@ app.post("/make-server-e1b246ca/diagnostic/teaser", async (c) => {
 // ---------------------------------------------------------------------------
 // POST /diagnostic/unlock — Capture email, queue ReportPart2
 // ---------------------------------------------------------------------------
-app.post("/make-server-e1b246ca/diagnostic/unlock", async (c) => {
+app.post("/make-server-e1b246ca/diagnostic/unlock", unlockRateLimit, async (c) => {
   try {
     const { leadId, email, bookDemo, websiteUrl, statedAudience } = await c.req.json();
 
@@ -505,6 +596,10 @@ app.post("/make-server-e1b246ca/diagnostic/unlock", async (c) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return c.json({ error: "Invalid email format" }, 400);
+    }
+
+    if (!isWorkEmail(email)) {
+      return c.json({ error: "Please use a work email address" }, 400);
     }
 
     const supabase = getSupabase();
@@ -559,7 +654,7 @@ app.post("/make-server-e1b246ca/diagnostic/unlock", async (c) => {
 
         // Generate Part 1
         const message = await anthropic.messages.create({
-          model: "claude-sonnet-4-5-20250929",
+          model: "claude-sonnet-4-6-20250514",
           max_tokens: 4096,
           messages: [
             {
@@ -608,7 +703,7 @@ app.post("/make-server-e1b246ca/diagnostic/unlock", async (c) => {
     if (report1) {
       try {
         const message = await anthropic.messages.create({
-          model: "claude-sonnet-4-5-20250929",
+          model: "claude-sonnet-4-6-20250514",
           max_tokens: 4096,
           messages: [
             {
@@ -648,7 +743,7 @@ app.post("/make-server-e1b246ca/diagnostic/unlock", async (c) => {
               body: JSON.stringify({
                 from: "AskPhi <reports@askphi.ai>",
                 to: email,
-                subject: `Your ICP Analysis Report — ${companyName}`,
+                subject: `Your Audience Intelligence Report — ${companyName}`,
                 html: emailHtml,
               }),
             });
@@ -697,7 +792,20 @@ function buildReportEmail(companyName: string, part1: any, part2: any): string {
   const segments = part1.audienceSegments || [];
   const gaps = part1.gapAnalysis?.gaps || [];
   const blindSpots = part1.gapAnalysis?.blindSpots || [];
+  const limitations = part1.gapAnalysis?.limitations || [];
+  const psychProfiles = part2.psychographicProfiles || [];
+  const langAnalysis = part2.languageAnalysis || [];
   const playbooks = part2.communicationPlaybook || [];
+
+  // Reusable style constants
+  const card = "background:#2a2a2a;border-radius:16px;padding:32px;margin-bottom:24px;";
+  const h2 = "color:#fff;font-size:20px;margin:0 0 16px;";
+  const h3 = "color:#2563EB;font-size:14px;font-weight:600;margin:16px 0 8px;";
+  const body = "color:#ffffffcc;font-size:13px;line-height:1.6;margin:0 0 4px;";
+  const muted = "color:#ffffff80;font-size:13px;margin:0 0 4px;";
+  const tag = "display:inline-block;background:#2563EB20;color:#60a5fa;border-radius:12px;padding:4px 12px;font-size:12px;margin:2px;";
+  const bullet = (color: string) => `color:${color};font-size:13px;line-height:1.6;margin:2px 0;`;
+  const divider = "border:0;border-top:1px solid #ffffff10;margin:16px 0;";
 
   return `<!DOCTYPE html>
 <html>
@@ -705,62 +813,192 @@ function buildReportEmail(companyName: string, part1: any, part2: any): string {
 <body style="margin:0;padding:0;background:#1f1f1f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:640px;margin:0 auto;padding:40px 24px;">
 
+  <!-- Header -->
   <div style="text-align:center;margin-bottom:32px;">
-    <h1 style="color:#65EC87;font-size:28px;margin:0;">AskPhi</h1>
-    <p style="color:#ffffff80;font-size:14px;margin-top:8px;">ICP Analysis Report</p>
+    <h1 style="color:#2563EB;font-size:28px;margin:0;">AskPhi</h1>
+    <p style="color:#ffffff80;font-size:14px;margin-top:8px;">Audience Intelligence Report</p>
   </div>
 
-  <div style="background:#2a2a2a;border-radius:16px;padding:32px;margin-bottom:24px;">
+  <!-- Company Overview -->
+  <div style="${card}">
     <h2 style="color:#fff;font-size:24px;margin:0 0 8px;">${companyName}</h2>
-    <p style="color:#ffffff80;font-size:14px;margin:0 0 16px;">${part1.companyOverview?.description || ""}</p>
-    <p style="color:#65EC87;font-size:14px;font-style:italic;margin:0;">"${part1.companyOverview?.valueProp || ""}"</p>
+    <p style="${muted}">${part1.companyOverview?.description || ""}</p>
+    <p style="color:#60a5fa;font-size:14px;font-style:italic;margin:12px 0 0;">"${part1.companyOverview?.valueProp || ""}"</p>
+    ${part1.companyOverview?.businessModel ? `<p style="${muted}margin-top:12px;"><strong style="color:#fff;">Model:</strong> ${part1.companyOverview.businessModel} · ${part1.companyOverview.industry || ""} · ${part1.companyOverview.stage || ""}</p>` : ""}
   </div>
 
-  <div style="background:#2a2a2a;border-radius:16px;padding:32px;margin-bottom:24px;">
-    <h2 style="color:#fff;font-size:20px;margin:0 0 16px;">Positioning vs Reality</h2>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PART 1: WHO YOUR AUDIENCE ACTUALLY IS         -->
+  <!-- ═══════════════════════════════════════════ -->
+
+  <div style="text-align:center;margin:32px 0 24px;">
+    <p style="color:#ffffff40;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0;">Part 1</p>
+    <h2 style="color:#fff;font-size:22px;margin:8px 0 0;">Who Your Audience Actually Is</h2>
+  </div>
+
+  <!-- Positioning vs Reality -->
+  <div style="${card}">
+    <h2 style="${h2}">Positioning vs Reality</h2>
     <div style="text-align:center;margin-bottom:16px;">
       <span style="font-size:48px;font-weight:bold;color:${(part1.gapAnalysis?.alignmentScore || 0) < 40 ? '#ef4444' : (part1.gapAnalysis?.alignmentScore || 0) <= 70 ? '#eab308' : '#22c55e'};">
         ${part1.gapAnalysis?.alignmentScore || "—"}
       </span>
       <p style="color:#ffffff60;font-size:12px;margin:4px 0 0;">Alignment Score</p>
     </div>
+    ${part1.gapAnalysis?.statedAudience ? `
+    <div style="background:#ffffff08;border-radius:8px;padding:12px;margin-bottom:8px;">
+      <p style="color:#ffffff60;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">You said your audience is</p>
+      <p style="${body}">${part1.gapAnalysis.statedAudience}</p>
+    </div>` : ""}
+    ${part1.gapAnalysis?.actualAudience ? `
+    <div style="background:#ffffff08;border-radius:8px;padding:12px;margin-bottom:12px;">
+      <p style="color:#ffffff60;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your website actually signals to</p>
+      <p style="${body}">${part1.gapAnalysis.actualAudience}</p>
+    </div>` : ""}
     ${gaps.map((g: any) => `
     <div style="background:#ffffff08;border-radius:8px;padding:12px;margin-bottom:8px;">
       <strong style="color:#fff;">${g.category}</strong>
-      <span style="color:${g.severity === 'high' ? '#ef4444' : g.severity === 'medium' ? '#eab308' : '#22c55e'};font-size:12px;float:right;">${g.severity}</span>
-      <p style="color:#ffffff80;font-size:13px;margin:8px 0 0;">Stated: ${g.stated}<br>Reality: ${g.reality}</p>
+      <span style="color:${g.severity === 'high' ? '#ef4444' : g.severity === 'medium' ? '#eab308' : '#22c55e'};font-size:12px;float:right;text-transform:uppercase;">${g.severity}</span>
+      <p style="${muted}margin-top:8px;"><strong style="color:#ffffff99;">Stated:</strong> ${g.stated}</p>
+      <p style="${muted}"><strong style="color:#ffffff99;">Reality:</strong> ${g.reality}</p>
     </div>`).join("")}
     ${blindSpots.length > 0 ? `
-    <h3 style="color:#ffffff60;font-size:13px;text-transform:uppercase;margin:16px 0 8px;">Blind Spots</h3>
-    ${blindSpots.map((s: string) => `<p style="color:#ffffff80;font-size:13px;margin:4px 0;">⚠ ${s}</p>`).join("")}` : ""}
+    <hr style="${divider}">
+    <h3 style="color:#ffffff60;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">Blind Spots</h3>
+    ${blindSpots.map((s: string) => `<p style="${bullet('#eab308')}">⚠ ${s}</p>`).join("")}` : ""}
+    ${limitations.length > 0 ? `
+    <hr style="${divider}">
+    <h3 style="color:#ffffff60;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;">What We Couldn't Verify</h3>
+    ${limitations.map((s: string) => `<p style="${muted}">· ${s}</p>`).join("")}` : ""}
   </div>
 
-  <div style="background:#2a2a2a;border-radius:16px;padding:32px;margin-bottom:24px;">
-    <h2 style="color:#fff;font-size:20px;margin:0 0 12px;">Who Your Website Actually Targets</h2>
-    <p style="color:#ffffff80;font-size:14px;margin:0 0 16px;">${part1.primaryICP?.summary || ""}</p>
-    ${(part1.primaryICP?.jobTitles || []).map((t: string) => `<span style="display:inline-block;background:#65EC8720;color:#65EC87;border-radius:12px;padding:4px 12px;font-size:12px;margin:2px;">${t}</span>`).join("")}
+  <!-- Primary ICP -->
+  <div style="${card}">
+    <h2 style="${h2}">Your Primary Audience</h2>
+    <p style="${body}">${part1.primaryICP?.summary || ""}</p>
+    <hr style="${divider}">
+    <h3 style="${h3}">Likely Buyer Titles</h3>
+    <div style="margin-bottom:12px;">
+      ${(part1.primaryICP?.jobTitles || []).map((t: string) => `<span style="${tag}">${t}</span>`).join("")}
+    </div>
+    ${(part1.primaryICP?.companyTypes || []).length > 0 ? `
+    <h3 style="${h3}">Company Types</h3>
+    <div style="margin-bottom:12px;">
+      ${(part1.primaryICP.companyTypes).map((t: string) => `<span style="${tag}">${t}</span>`).join("")}
+    </div>` : ""}
+    ${(part1.primaryICP?.problemsSolved || []).length > 0 ? `
+    <h3 style="${h3}">Problems They're Trying to Solve</h3>
+    ${(part1.primaryICP.problemsSolved).map((p: string) => `<p style="${bullet('#ffffffcc')}">→ ${p}</p>`).join("")}` : ""}
+    ${(part1.primaryICP?.evidence || []).length > 0 ? `
+    <hr style="${divider}">
+    <h3 style="${h3}">Evidence From Your Website</h3>
+    ${(part1.primaryICP.evidence).map((e: string) => `<p style="${muted}">📌 ${e}</p>`).join("")}` : ""}
   </div>
 
+  <!-- Audience Segments -->
   ${segments.map((seg: any, i: number) => `
-  <div style="background:#2a2a2a;border-radius:16px;padding:32px;margin-bottom:24px;">
-    <h2 style="color:#fff;font-size:20px;margin:0 0 8px;">Segment ${i + 1}: ${seg.name}</h2>
-    <p style="color:#ffffff80;font-size:14px;margin:0 0 12px;">${seg.description}</p>
-    <p style="color:#ffffff60;font-size:13px;margin:0 0 8px;">${seg.demographics}</p>
-    ${(seg.triggers || []).map((t: string) => `<p style="color:#65EC87;font-size:13px;margin:2px 0;">→ ${t}</p>`).join("")}
+  <div style="${card}">
+    <h2 style="${h2}">Segment ${i + 1}: ${seg.name}</h2>
+    <p style="${body}">${seg.description}</p>
+    <p style="${muted}">${seg.demographics}</p>
+    ${(seg.behaviors || []).length > 0 ? `
+    <h3 style="${h3}">Observable Behaviors</h3>
+    ${seg.behaviors.map((b: string) => `<p style="${bullet('#ffffffcc')}">· ${b}</p>`).join("")}` : ""}
+    ${(seg.needs || []).length > 0 ? `
+    <h3 style="${h3}">What They Need</h3>
+    ${seg.needs.map((n: string) => `<p style="${bullet('#ffffffcc')}">→ ${n}</p>`).join("")}` : ""}
+    ${(seg.triggers || []).length > 0 ? `
+    <h3 style="${h3}">Buying Triggers</h3>
+    ${seg.triggers.map((t: string) => `<p style="${bullet('#60a5fa')}">⚡ ${t}</p>`).join("")}` : ""}
   </div>`).join("")}
 
-  ${playbooks.length > 0 ? playbooks.map((pb: any) => `
-  <div style="background:#2a2a2a;border-radius:16px;padding:32px;margin-bottom:24px;">
-    <h2 style="color:#fff;font-size:20px;margin:0 0 12px;">Messaging Playbook: ${pb.segmentName}</h2>
-    <h3 style="color:#65EC87;font-size:14px;margin:12px 0 8px;">✓ Do Say</h3>
-    ${(pb.doSay || []).map((s: string) => `<p style="color:#ffffff80;font-size:13px;margin:2px 0;">• ${s}</p>`).join("")}
-    <h3 style="color:#ef4444;font-size:14px;margin:12px 0 8px;">✗ Don't Say</h3>
-    ${(pb.dontSay || []).map((s: string) => `<p style="color:#ffffff80;font-size:13px;margin:2px 0;">• ${s}</p>`).join("")}
-  </div>`).join("") : ""}
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PART 2: HOW THEY THINK, TALK & DECIDE       -->
+  <!-- ═══════════════════════════════════════════ -->
 
+  <div style="text-align:center;margin:32px 0 24px;">
+    <p style="color:#ffffff40;font-size:11px;text-transform:uppercase;letter-spacing:2px;margin:0;">Part 2</p>
+    <h2 style="color:#fff;font-size:22px;margin:8px 0 0;">How They Think, Talk &amp; Decide</h2>
+  </div>
+
+  <!-- Psychographic Profiles -->
+  ${psychProfiles.map((p: any) => `
+  <div style="${card}">
+    <h2 style="${h2}">Psychographic Profile: ${p.segmentName}</h2>
+    ${(p.values || []).length > 0 ? `
+    <h3 style="${h3}">What They Value</h3>
+    ${p.values.map((v: string) => `<p style="${bullet('#ffffffcc')}">· ${v}</p>`).join("")}` : ""}
+    ${(p.aspirations || []).length > 0 ? `
+    <h3 style="${h3}">What They're Aspiring To</h3>
+    ${p.aspirations.map((a: string) => `<p style="${bullet('#ffffffcc')}">↑ ${a}</p>`).join("")}` : ""}
+    ${(p.fears || []).length > 0 ? `
+    <h3 style="${h3}">What Keeps Them Up at Night</h3>
+    ${p.fears.map((f: string) => `<p style="${bullet('#ef4444')}">⚠ ${f}</p>`).join("")}` : ""}
+    ${(p.informationSources || []).length > 0 ? `
+    <h3 style="${h3}">Where They Get Information</h3>
+    ${p.informationSources.map((s: string) => `<p style="${bullet('#ffffffcc')}">📡 ${s}</p>`).join("")}` : ""}
+    ${p.decisionStyle ? `
+    <h3 style="${h3}">How They Make Decisions</h3>
+    <p style="${body}">${p.decisionStyle}</p>` : ""}
+  </div>`).join("")}
+
+  <!-- Language Analysis -->
+  ${langAnalysis.map((la: any) => `
+  <div style="${card}">
+    <h2 style="${h2}">Language They Use: ${la.segmentName}</h2>
+    ${la.emotionalTone ? `<p style="${body}"><strong style="color:#fff;">Emotional tone:</strong> ${la.emotionalTone}</p><hr style="${divider}">` : ""}
+    ${(la.vocabulary || []).length > 0 ? `
+    <h3 style="${h3}">Words &amp; Phrases They Actually Use</h3>
+    <div style="margin-bottom:12px;">
+      ${la.vocabulary.map((v: string) => `<span style="${tag}">${v}</span>`).join("")}
+    </div>` : ""}
+    ${(la.recurringPhrases || []).length > 0 ? `
+    <h3 style="${h3}">Recurring Phrases</h3>
+    ${la.recurringPhrases.map((p: string) => `<p style="${bullet('#60a5fa')}">→ "${p}"</p>`).join("")}` : ""}
+    ${(la.questionsTheyAsk || []).length > 0 ? `
+    <h3 style="${h3}">Questions They Ask Before Buying</h3>
+    ${la.questionsTheyAsk.map((q: string) => `<p style="${bullet('#ffffffcc')}">? ${q}</p>`).join("")}` : ""}
+    ${(la.wordsTheyAvoid || []).length > 0 ? `
+    <h3 style="${h3}">Words That Turn Them Off</h3>
+    ${la.wordsTheyAvoid.map((w: string) => `<p style="${bullet('#ef4444')}">✗ ${w}</p>`).join("")}` : ""}
+    ${(la.realQuotes || []).length > 0 ? `
+    <hr style="${divider}">
+    <h3 style="${h3}">Real Quotes</h3>
+    ${la.realQuotes.map((rq: any) => `
+    <div style="background:#ffffff08;border-left:3px solid #2563EB;padding:8px 12px;margin-bottom:8px;border-radius:0 8px 8px 0;">
+      <p style="color:#ffffffcc;font-size:13px;font-style:italic;margin:0;">"${rq.quote}"</p>
+      <p style="color:#ffffff60;font-size:11px;margin:4px 0 0;">— ${rq.source}</p>
+    </div>`).join("")}` : ""}
+  </div>`).join("")}
+
+  <!-- Communication Playbook -->
+  ${playbooks.map((pb: any) => `
+  <div style="${card}">
+    <h2 style="${h2}">Messaging Playbook: ${pb.segmentName}</h2>
+    ${(pb.doSay || []).length > 0 ? `
+    <h3 style="color:#22c55e;font-size:14px;font-weight:600;margin:0 0 8px;">✓ Say This</h3>
+    ${pb.doSay.map((s: string) => `<p style="${bullet('#ffffffcc')}">• ${s}</p>`).join("")}` : ""}
+    ${(pb.dontSay || []).length > 0 ? `
+    <h3 style="color:#ef4444;font-size:14px;font-weight:600;margin:16px 0 8px;">✗ Never Say This</h3>
+    ${pb.dontSay.map((s: string) => `<p style="${bullet('#ffffffcc')}">• ${s}</p>`).join("")}` : ""}
+    ${(pb.channelRecommendations || []).length > 0 ? `
+    <hr style="${divider}">
+    <h3 style="${h3}">Best Channels to Reach Them</h3>
+    ${pb.channelRecommendations.map((ch: string) => `<p style="${bullet('#60a5fa')}">📣 ${ch}</p>`).join("")}` : ""}
+    ${(pb.behavioralTriggers || []).length > 0 ? `
+    <h3 style="${h3}">When They're Most Receptive</h3>
+    ${pb.behavioralTriggers.map((bt: string) => `<p style="${bullet('#ffffffcc')}">⚡ ${bt}</p>`).join("")}` : ""}
+    ${(pb.cognitiveBiasesToLeverage || []).length > 0 ? `
+    <hr style="${divider}">
+    <h3 style="${h3}">Behavioral Science Principles That Apply</h3>
+    ${pb.cognitiveBiasesToLeverage.map((cb: string) => `<p style="${bullet('#ffffffcc')}">🧠 ${cb}</p>`).join("")}` : ""}
+  </div>`).join("")}
+
+  <!-- CTA -->
   <div style="text-align:center;padding:32px 0;">
+    <p style="color:#ffffffcc;font-size:15px;margin:0 0 16px;">Want help turning these insights into strategy?</p>
     <a href="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ07I4FMFs15WyD9hK8XiTRQm2lYhBp_CiBHxeml2xwZ7Vs1O12mDV8y6h4QWEr0CP0C6nAwwO5z"
-       style="display:inline-block;background:#65EC87;color:#000;text-decoration:none;padding:14px 32px;border-radius:24px;font-weight:600;font-size:16px;">
+       style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;padding:14px 32px;border-radius:24px;font-weight:600;font-size:16px;">
       Book a Strategy Call
     </a>
     <p style="color:#ffffff40;font-size:12px;margin-top:16px;">
@@ -768,6 +1006,7 @@ function buildReportEmail(companyName: string, part1: any, part2: any): string {
     </p>
   </div>
 
+  <!-- Footer -->
   <div style="text-align:center;border-top:1px solid #ffffff20;padding-top:24px;margin-top:24px;">
     <p style="color:#ffffff40;font-size:12px;">© 2026 AskPhi. All rights reserved.</p>
   </div>
