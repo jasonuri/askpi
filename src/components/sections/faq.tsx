@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { SectionHeader } from "@/components/ui/section-header";
 
 type FAQCategory =
   | "Getting Started"
@@ -16,57 +17,51 @@ type FAQCategory =
 
 const faqs: { question: string; answer: string; category: FAQCategory }[] = [
   {
-    question: "What is a Customer Intelligence Sprint?",
+    question: "What is an Audience Intelligence Sprint?",
     answer:
-      "A Customer Intelligence Sprint is a 72-hour engagement where we decode your buyers' switching story — the forces, triggers, and commitment patterns that explain why your best customers chose you. Using JTBD methodology combined with AI-powered synthetic audience research, we deliver a complete demand-side intelligence brief.",
-    category: "Getting Started",
-  },
-  {
-    question: "What is JTBD and why does it matter?",
-    answer:
-      "Jobs to Be Done (JTBD) is a framework that explains buying decisions through the lens of progress — what job was the buyer hiring your product to do? Unlike traditional research that asks 'who is your customer?', JTBD asks 'why did they switch?' Understanding that switching moment gives you a causal understanding of demand.",
-    category: "Getting Started",
-  },
-  {
-    question: "What is a switching moment?",
-    answer:
-      "The switching moment is the point where a buyer decides their current situation is no longer acceptable and commits to change. Every switching moment has a structure: a trigger event, growing dissatisfaction (push), attraction to alternatives (pull), fear of the new (anxiety), and attachment to the current way (inertia). We map all four forces.",
+      "An Audience Intelligence Sprint is a 72-hour engagement where we map the behavioural forces behind your audience's decisions — the triggers, motivations, and barriers that explain why they choose you (or don't). Using AI-powered audience modelling grounded in behavioural science, we deliver a complete intelligence brief you can act on immediately.",
     category: "Getting Started",
   },
   {
     question: "How is this different from traditional market research?",
     answer:
-      "Traditional research asks customers what they want and takes their answers at face value. We decode what they actually did and why. Surveys capture stated preferences. We map revealed behavior — the causal forces behind real switching decisions.",
+      "Traditional research asks people what they want and takes their answers at face value. We map what they actually do and why. Surveys capture stated preferences — we reveal actual decision behaviour. The gap between what people say and what they do is where the real insight lives.",
     category: "Getting Started",
   },
   {
-    question: "What is demand-side intelligence?",
+    question: "What are the four behavioural forces?",
     answer:
-      "Demand-side intelligence is the understanding of why buyers switch — the forces, triggers, and circumstances that create demand for your solution. Most companies operate on supply-side thinking. Demand-side intelligence flips this: 'Here's why buyers are switching, let's align everything to that moment.'",
+      "Every decision is shaped by four forces: Frustration (dissatisfaction pushing them away from the status quo), Attraction (what draws them toward a new solution), Hesitation (fear or uncertainty about change), and Habit (attachment to the current way of doing things). We map all four forces for your specific audience.",
+    category: "Getting Started",
+  },
+  {
+    question: "Who is this for?",
+    answer:
+      "AskPhi works with three types of clients: startups sharpening their go-to-market and audience definition, behavioural science agencies delivering audience research for their clients, and enterprise teams (like Channel 4, Fremantle, and Pion) who need strategic audience intelligence to inform campaigns, briefs, and business decisions.",
+    category: "Getting Started",
+  },
+  {
+    question: "What is AI-powered audience modelling?",
+    answer:
+      "We use AI to create representations of your target audience based on real behavioural patterns, market data, and decision science frameworks. Stanford research shows AI representations can replicate human behavioural patterns with up to 85% accuracy — and they're available in hours, not weeks.",
     category: "The Research",
   },
   {
-    question: "What are decision forces?",
+    question: "Can I white-label the deliverables for my clients?",
     answer:
-      "Every buying decision is shaped by four forces: Push (frustration with the current situation), Pull (attraction to the new solution), Anxiety (fear about the new), and Inertia (attachment to current habits). We map all four forces for your specific buyers.",
+      "Yes. If you're an agency or consultancy, we can deliver the intelligence brief in a format ready for your clients. Many agencies use our sprint as the behavioural research layer behind their own strategy recommendations.",
     category: "The Research",
   },
   {
-    question: "What is synthetic audience research?",
+    question: "How does the sprint work day by day?",
     answer:
-      "Synthetic audience research uses AI to create representations of your target buyers based on real behavioral patterns, market data, and JTBD frameworks. Stanford studies show AI representations can replicate human behavioral patterns with up to 85% accuracy — and they're available instantly.",
-    category: "The Research",
-  },
-  {
-    question: "How does the sprint work?",
-    answer:
-      "Day 1: We analyze your website, competitive landscape, and market positioning. Day 2: Using JTBD methodology and synthetic audience research, we map decision forces, switching triggers, and commitment patterns. Day 3: We compile your intelligence brief and deliver it with a 60-minute strategy debrief.",
+      "Day 1: We analyse your website, competitive landscape, and market positioning to identify gaps. Day 2: Using AI-powered audience modelling, we map behavioural forces, decision triggers, and segment profiles. Day 3: We compile your intelligence brief and deliver it with a 60-minute strategy debrief.",
     category: "Process & Delivery",
   },
   {
     question: "What do I receive?",
     answer:
-      "Your Sprint deliverable includes: positioning-reality gap analysis with alignment scoring, decision force map for each buyer segment, switching trigger identification, commitment pattern analysis, messaging language brief, and a 60-minute strategy debrief.",
+      "Your Sprint deliverable includes: digital presence and positioning analysis, behavioural audience modelling, a decision force map for each audience segment, trigger and timing analysis, behavioural segment profiles, an audience language brief, and a 60-minute strategy debrief.",
     category: "Process & Delivery",
   },
   {
@@ -76,15 +71,15 @@ const faqs: { question: string; answer: string; category: FAQCategory }[] = [
     category: "Process & Delivery",
   },
   {
-    question: "How accurate is synthetic audience research?",
+    question: "How accurate is AI-powered audience modelling?",
     answer:
-      "Stanford research shows AI representations can replicate human behavioral patterns with up to 85% accuracy. While not a replacement for real customer interviews, synthetic research excels at pattern recognition and hypothesis generation.",
+      "Stanford research shows AI representations can replicate human behavioural patterns with up to 85% accuracy. While not a replacement for real audience interviews, AI-powered modelling excels at pattern recognition and hypothesis generation — giving you a behavioural map to validate and build on.",
     category: "Accuracy & Trust",
   },
   {
     question: "How do I validate the findings?",
     answer:
-      "We recommend a 'trust but verify' approach. Your brief includes specific validation prompts — exact questions to ask real customers. Most clients find that 70-80% of findings match their intuition while 20-30% reveal genuine blind spots.",
+      "We recommend a 'trust but verify' approach. Your brief includes specific validation prompts — exact questions to ask real audience members. Most clients find that 70-80% of findings match their intuition while 20-30% reveal genuine blind spots.",
     category: "Accuracy & Trust",
   },
   {
@@ -111,17 +106,11 @@ export function FAQ() {
   return (
     <section id="faq" className="w-full px-4 py-24 bg-muted/50">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest">
-            FAQ
-          </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-foreground">
-            Got Questions?
-          </h2>
-          <p className="text-muted-foreground">
-            Everything you need to know about switching intelligence
-          </p>
-        </div>
+        <SectionHeader
+          label="FAQ"
+          title="Got Questions?"
+          description="Everything you need to know about audience intelligence"
+        />
 
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
           {categories.map((cat) => (

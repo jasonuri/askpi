@@ -1,28 +1,29 @@
 import { Users, Zap, Clock, Target } from "lucide-react";
+import { SectionHeader } from "@/components/ui/section-header";
 
 const challenges = [
   {
-    title: "Marketing to Who You Think Bought",
+    title: "Profiles That Miss the Story",
     description:
-      "Your ICP is based on stated preferences and firmographic data. But that describes demographics — not the switching moment that actually drove the purchase.",
+      "Demographics and firmographics tell you who your audience is — but not what triggers their decisions. Without behavioural context, your profiles are snapshots, not strategies.",
     icon: Users,
   },
   {
-    title: "Messaging Built on Assumptions",
+    title: "Research That Captures Opinions, Not Behaviour",
     description:
-      "Your positioning sounds right internally, but it's built on what customers say they want — not the push, pull, anxiety, and inertia forces that shaped their real decision.",
+      "Surveys and focus groups capture what people say they want. But stated preferences rarely match actual decision behaviour — the gap between intent and action is where insight lives.",
     icon: Zap,
   },
   {
-    title: "No Map of the Switching Moment",
+    title: "Messaging That Sounds Right but Doesn't Land",
     description:
-      "You can't see the trigger events, the decision timeline, or the commitment patterns that predict when and why buyers actually move.",
+      "Your positioning was built on internal consensus, not audience decision forces. Without mapping what frustrates, attracts, and holds your audience back, messaging stays generic.",
     icon: Clock,
   },
   {
-    title: "Competitors Are Moving Faster",
+    title: "Competitors Are Already Closing This Gap",
     description:
-      "While you're running surveys and guessing, your competitors are mapping demand-side intelligence — the causal forces behind every buying decision.",
+      "Leading organisations are segmenting by motivation and decision triggers — not just demographics. The ones who understand why audiences act will win the next brief, pitch, or campaign.",
     icon: Target,
   },
 ];
@@ -31,18 +32,12 @@ export function Problem() {
   return (
     <section className="w-full px-4 py-24 bg-muted/50">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest">
-            The Challenge
-          </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-foreground">
-            You're Describing Customers, Not Decoding Decisions
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Stalled pipelines. Weak differentiation. Positioning built on
-            guesswork.
-          </p>
-        </div>
+        <SectionHeader
+          label="The Challenge"
+          title="You Know Your Audience. You Don't Know Their Decisions."
+          description="Flat personas. Insight decks that gather dust. Strategy built on what people say, not what they do."
+          descriptionClassName="text-lg max-w-3xl mx-auto"
+        />
         <div className="grid md:grid-cols-2 gap-6">
           {challenges.map((challenge, i) => {
             const Icon = challenge.icon;

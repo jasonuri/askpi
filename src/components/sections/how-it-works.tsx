@@ -1,21 +1,23 @@
+import { SectionHeader } from "@/components/ui/section-header";
+
 const steps = [
   {
     step: "01",
-    title: "Decode Your Switching Story",
+    title: "Analyse Your Digital Signals",
     description:
-      "We analyze your website, competitive landscape, and market positioning. Our AI identifies the gap between who you think your audience is and the decision forces that actually drive purchases.",
+      "We analyse your website, competitive landscape, and market positioning. Our AI identifies the gap between how you present your offer and the decision forces that actually move your audience.",
   },
   {
     step: "02",
-    title: "Map the Decision Forces",
+    title: "Map the Behavioural Forces",
     description:
-      "Using JTBD methodology and synthetic audience research, we map the four forces of every buying decision — Push, Pull, Anxiety, and Inertia — for your specific buyers.",
+      "Using AI-powered audience modelling, we map the four behavioural forces behind every decision — what frustrates them, what attracts them, what makes them hesitate, and what keeps them stuck in old habits.",
   },
   {
     step: "03",
-    title: "Build Your Demand-Side Playbook",
+    title: "Receive Your Intelligence Brief",
     description:
-      "Receive a complete switching intelligence brief: decision timeline with trigger events, commitment patterns, language brief with exact buyer words, and a messaging playbook.",
+      "Get a complete intelligence brief: behavioural segment profiles, decision trigger analysis, a language brief with the exact words your people use, and a messaging playbook.",
   },
 ];
 
@@ -23,14 +25,10 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="w-full px-4 py-24">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest">
-            How It Works
-          </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-foreground">
-            From website signals to decision force mapping in 72 hours
-          </h2>
-        </div>
+        <SectionHeader
+          label="How It Works"
+          title="From your website to audience intelligence. 72 hours."
+        />
         <div className="space-y-12">
           {steps.map((step, i) => (
             <div
@@ -44,7 +42,7 @@ export function HowItWorks() {
                   <div className="w-12 h-12 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
                     {step.step}
                   </div>
-                  <h3 className="text-xl md:text-2xl font-serif font-medium text-foreground">
+                  <h3 className="text-xl md:text-2xl font-serif font-bold text-foreground">
                     {step.title}
                   </h3>
                 </div>

@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const CALENDAR_URL =
-  "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ07I4FMFs15WyD9hK8XiTRQm2lYhBp_CiBHxeml2xwZ7Vs1O12mDV8y6h4QWEr0CP0C6nAwwO5z";
+import { CALENDAR_URL } from "@/lib/constants";
 
 const navItems = [
   { label: "About", href: "/about" },
@@ -35,7 +33,7 @@ export function Header() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
-        <Link href="/" className="font-serif text-2xl text-foreground">
+        <Link href="/" className="font-serif font-bold text-2xl text-foreground">
           AskPhi
         </Link>
 

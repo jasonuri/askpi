@@ -5,9 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { subscribeNewsletter } from "@/lib/api";
-
-const CALENDAR_URL =
-  "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ07I4FMFs15WyD9hK8XiTRQm2lYhBp_CiBHxeml2xwZ7Vs1O12mDV8y6h4QWEr0CP0C6nAwwO5z";
+import { CALENDAR_URL } from "@/lib/constants";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -34,11 +32,11 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="space-y-4">
-            <span className="font-serif text-2xl text-foreground">AskPhi</span>
+            <span className="font-serif font-bold text-2xl text-foreground">AskPhi</span>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              AskPhi turns buyer behavior into competitive advantage. We map the
-              switching moment — the forces, triggers, and commitment patterns
-              behind every purchase.
+              AskPhi turns audience behaviour into competitive advantage. We map
+              the decision moments — the forces, triggers, and behavioural
+              patterns behind every choice your audience makes.
             </p>
           </div>
 
@@ -91,7 +89,7 @@ export function Footer() {
               Stay Updated
             </h4>
             <p className="text-sm text-muted-foreground">
-              Get the latest on switching intelligence and demand-side strategy.
+              Get the latest on audience behaviour and decision science.
             </p>
             <form onSubmit={handleSubscribe} className="space-y-2">
               <Input
@@ -106,7 +104,7 @@ export function Footer() {
                 disabled={status === "loading"}
                 className="w-full rounded-full"
               >
-                {status === "loading" ? "Subscribing..." : "Subscribe"}
+                {status === "loading" ? "Subscribing..." : "Get Insights"}
               </Button>
             </form>
             {status === "success" && (

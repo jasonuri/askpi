@@ -1,25 +1,29 @@
 import { Shield, Palette, Zap } from "lucide-react";
+import { SectionHeader } from "@/components/ui/section-header";
 
 const useCases = [
   {
     icon: Shield,
-    title: "ICP Sharpening",
+    title: "Audience Definition & Validation",
+    segment: "Startups",
     description:
-      "Pressure-test your ICP against actual buyer switching behavior. Discover whether your ideal customer profile matches reality — or just internal assumptions.",
+      "Pressure-test your target audience against real decision behaviour. Discover whether your ICP matches reality — or just internal assumptions. Sharpen your GTM with behavioural evidence.",
     color: "bg-violet-50 text-violet-600",
   },
   {
     icon: Palette,
-    title: "Decision Driver Discovery",
+    title: "Behavioural Audience Research",
+    segment: "Agencies",
     description:
-      "Surface the push, pull, anxiety, and inertia forces behind every buying decision. Know exactly what moves your buyers to act — and what keeps them stuck.",
+      "Go beyond stated preferences to map the forces that shape audience decisions. Deliver research your clients can act on — grounded in behavioural science, not just survey data.",
     color: "bg-emerald-50 text-emerald-600",
   },
   {
     icon: Zap,
-    title: "Messaging Validation",
+    title: "Strategic Audience Intelligence",
+    segment: "Enterprise",
     description:
-      "Test your positioning against a synthetic switching audience. Find out if your messaging resonates with the forces that actually drive purchase decisions.",
+      "Inform strategy with deep audience intelligence. Understand the triggers, motivations, and barriers that drive your audience — so every campaign, brief, or pitch is built on evidence.",
     color: "bg-cyan-50 text-cyan-600",
   },
 ];
@@ -28,18 +32,12 @@ export function UseCases() {
   return (
     <section id="use-cases" className="w-full px-4 py-24 bg-muted/50">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16 space-y-4">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest">
-            Use Cases
-          </p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-foreground">
-            What do you need to decode?
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            From ICP validation to decision force mapping — decode the switching
-            behavior that drives every purchase decision.
-          </p>
-        </div>
+        <SectionHeader
+          label="Use Cases"
+          title="Built for How You Work"
+          description="Whether you're sharpening a go-to-market, delivering audience research for clients, or informing enterprise strategy — AskPhi adapts to your context."
+          descriptionClassName="text-lg max-w-2xl mx-auto"
+        />
         <div className="grid md:grid-cols-3 gap-6">
           {useCases.map((uc, i) => {
             const Icon = uc.icon;
@@ -53,9 +51,16 @@ export function UseCases() {
                 >
                   <Icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground">
-                  {uc.title}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {uc.title}
+                  </h3>
+                  {"segment" in uc && (
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      {uc.segment}
+                    </span>
+                  )}
+                </div>
                 <p className="text-muted-foreground leading-relaxed">
                   {uc.description}
                 </p>
