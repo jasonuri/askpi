@@ -24,6 +24,9 @@ export interface PersonaSimulationProps {
   widgetRef?: React.RefObject<HTMLDivElement | null>;
 }
 
+/** Minimum viewport width (px) at which speech bubbles are enabled. */
+const BUBBLE_MIN_WIDTH = 768;
+
 // ── Constants ────────────────────────────────────────────────────────────────
 
 /** How often to check whether a new speech bubble should appear (ms). */
@@ -191,23 +194,51 @@ function PersonaSimulationInner({ widgetRef }: PersonaSimulationProps) {
         return;
       }
 
-      // Candidates: idle or interacting figures
-      const candidates = figureManager.figures.filter(
-        (f) => f.state === "idle" || f.state === "interacting"
-      );
-
-      if (candidates.length === 0) {
+      // Disable bubbles on small screens
+      if (container.offsetWidth < BUBBLE_MIN_WIDTH) {
         scheduleBubble();
         return;
       }
 
-      const fig = candidates[Math.floor(Math.random() * candidates.length)];
-      const headWorld = fig.getHeadWorldPosition();
-
-      // Project to NDC then to screen
-      const ndc = headWorld.clone().project(sceneManager.camera);
       const containerRect = container.getBoundingClientRect();
-      const { x, y } = ndcToScreen(ndc, containerRect);
+
+      // Build the widget exclusion rect (screen coords) with padding
+      const PADDING = 40;
+      let widgetLeft = -Infinity;
+      let widgetRight = Infinity;
+      let widgetTop = -Infinity;
+      let widgetBottom = Infinity;
+      if (widgetRef?.current) {
+        const wr = widgetRef.current.getBoundingClientRect();
+        widgetLeft = wr.left - PADDING;
+        widgetRight = wr.right + PADDING;
+        widgetTop = wr.top - PADDING;
+        widgetBottom = wr.bottom + PADDING;
+      }
+
+      // Candidates: idle or interacting figures, projected to screen, outside widget area
+      const sideCandidates = figureManager.figures
+        .filter((f) => f.state === "idle" || f.state === "interacting")
+        .map((f) => {
+          const headWorld = f.getHeadWorldPosition();
+          const ndc = headWorld.clone().project(sceneManager.camera);
+          const screen = ndcToScreen(ndc, containerRect);
+          return { figure: f, screen };
+        })
+        .filter(({ screen }) => {
+          // Reject if the bubble position overlaps the widget area
+          const insideX = screen.x >= widgetLeft && screen.x <= widgetRight;
+          const insideY = screen.y >= widgetTop && screen.y <= widgetBottom;
+          return !(insideX && insideY);
+        });
+
+      if (sideCandidates.length === 0) {
+        scheduleBubble();
+        return;
+      }
+
+      const pick = sideCandidates[Math.floor(Math.random() * sideCandidates.length)];
+      const { x, y } = pick.screen;
 
       const id = ++bubbleIdCounter;
       const insight = randomPhrase(insights);
@@ -233,7 +264,7 @@ function PersonaSimulationInner({ widgetRef }: PersonaSimulationProps) {
 
       scheduleBubble();
     }, delay);
-  }, [refs, insights]);
+  }, [refs, insights, widgetRef]);
 
   useEffect(() => {
     scheduleBubble();
