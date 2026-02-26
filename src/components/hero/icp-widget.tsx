@@ -12,6 +12,12 @@ import {
   extractDisplayDomain,
   normalizeUrl,
 } from "@/lib/url";
+import {
+  dispatchAnalysisStarted,
+  dispatchAnalysisComplete,
+  dispatchAnalysisReset,
+  extractSegments,
+} from "@/lib/events";
 
 type Step = "url" | "audience" | "streaming" | "email_capture" | "confirmation";
 
@@ -25,6 +31,9 @@ export function IcpWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [leadId, setLeadId] = useState("");
   const [teaserText, setTeaserText] = useState("");
+  // Mirror of teaserText in a ref so we always have the final accumulated value
+  // when the "done" event fires (state updates are async).
+  const teaserTextRef = useRef("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [statedAudience, setStatedAudience] = useState("");
   const [displayDomain, setDisplayDomain] = useState("");
@@ -80,7 +89,9 @@ export function IcpWidget() {
       ]);
 
       setTeaserText("");
+      teaserTextRef.current = "";
       setStep("streaming");
+      dispatchAnalysisStarted(displayDomain);
 
       abortRef.current = new AbortController();
 
@@ -93,8 +104,10 @@ export function IcpWidget() {
           if (event.type === "leadId" && event.leadId) {
             setLeadId(event.leadId);
           } else if (event.type === "text" && event.text) {
+            teaserTextRef.current += event.text;
             setTeaserText((prev) => prev + event.text);
           } else if (event.type === "done") {
+            dispatchAnalysisComplete(displayDomain, extractSegments(teaserTextRef.current));
             setStep("email_capture");
           } else if (event.type === "error") {
             setStep("url");
@@ -114,10 +127,12 @@ export function IcpWidget() {
 
   const handleReset = useCallback(() => {
     abortRef.current?.abort();
+    dispatchAnalysisReset();
     setStep("url");
     setMessages([]);
     setLeadId("");
     setTeaserText("");
+    teaserTextRef.current = "";
     setWebsiteUrl("");
     setStatedAudience("");
     setDisplayDomain("");
