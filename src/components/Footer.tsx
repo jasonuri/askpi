@@ -32,7 +32,7 @@ export function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="space-y-4">
-            <span className="font-serif font-bold text-2xl text-foreground">AskPhi</span>
+            <span className="font-serif font-normal tracking-tight text-2xl text-foreground">AskPhi</span>
             <p className="text-sm text-muted-foreground leading-relaxed">
               AskPhi turns audience behaviour into competitive advantage. We map
               the decision moments — the forces, triggers, and behavioural
