@@ -13,6 +13,12 @@ export interface GroundBounds {
   maxZ: number;
 }
 
+/** Normalised radius inside which figures receive an outward push during wandering. */
+const CENTER_AVOID_RADIUS_NORM = 0.5;
+
+/** Maximum fractional strength of the outward nudge at the exact centre. */
+const CENTER_AVOID_STRENGTH = 0.8;
+
 /**
  * Stateless behavior helpers. FigureManager delegates movement logic here
  * so the files stay focused and testable independently.
@@ -55,6 +61,9 @@ export class BehaviorController {
       const speed = vel.length();
       if (speed > 0.001) vel.normalize().multiplyScalar(speed);
     }
+
+    // Soft outward push — prevents figures drifting back to the centre
+    this.applyCenterAvoidance(pos, vel, groundBounds);
 
     // Exclusion zone deflection
     if (exclusionZone && this.isApproachingZone(pos, vel, exclusionZone)) {
@@ -197,6 +206,52 @@ export class BehaviorController {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Nudges a wandering figure's velocity outward when it drifts inside the
+   * central avoidance radius.  The push is purely directional — the original
+   * speed is preserved so the figure doesn't accelerate.
+   */
+  private applyCenterAvoidance(
+    pos: THREE.Vector3,
+    vel: THREE.Vector3,
+    bounds: GroundBounds
+  ): void {
+    const halfX = (bounds.maxX - bounds.minX) / 2;
+    const halfZ = (bounds.maxZ - bounds.minZ) / 2;
+
+    // Normalise position to [-1, 1] space
+    const nx = pos.x / halfX;
+    const nz = pos.z / halfZ;
+    const normDist = Math.sqrt(nx * nx + nz * nz);
+
+    if (normDist >= CENTER_AVOID_RADIUS_NORM) return;
+
+    // Outward direction from origin (handle the degenerate zero case)
+    let outX: number;
+    let outZ: number;
+    if (normDist < 0.0001) {
+      const angle = Math.random() * Math.PI * 2;
+      outX = Math.cos(angle);
+      outZ = Math.sin(angle);
+    } else {
+      outX = nx / normDist;
+      outZ = nz / normDist;
+    }
+
+    // Strength scales linearly: full at centre, zero at the avoidance radius
+    const strength = CENTER_AVOID_STRENGTH * (1 - normDist / CENTER_AVOID_RADIUS_NORM);
+
+    const currentSpeed = vel.length();
+
+    vel.x += outX * strength;
+    vel.z += outZ * strength;
+
+    // Redirect without changing speed
+    if (currentSpeed > 0.001) {
+      vel.normalize().multiplyScalar(currentSpeed);
+    }
+  }
 
   /**
    * Returns true if the figure's current velocity would carry it into the zone

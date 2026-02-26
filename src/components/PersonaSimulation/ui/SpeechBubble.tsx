@@ -4,12 +4,14 @@ import { AnimatePresence, motion } from "framer-motion";
 
 export interface SpeechBubbleProps {
   text: string;
+  source?: string;
+  year?: number;
   x: number;
   y: number;
   visible: boolean;
 }
 
-export function SpeechBubble({ text, x, y, visible }: SpeechBubbleProps) {
+export function SpeechBubble({ text, source, year, x, y, visible }: SpeechBubbleProps) {
   return (
     <AnimatePresence>
       {visible && (
@@ -47,6 +49,21 @@ export function SpeechBubble({ text, x, y, visible }: SpeechBubbleProps) {
             >
               {text}
             </span>
+            {source && (
+              <span
+                style={{
+                  fontSize: "9px",
+                  opacity: 0.5,
+                  color: "#1A1A2E",
+                  fontFamily: "var(--font-sans, Inter, sans-serif)",
+                  whiteSpace: "nowrap",
+                  display: "block",
+                  lineHeight: 1.4,
+                }}
+              >
+                — {source}{year ? `, ${year}` : ""}
+              </span>
+            )}
 
             {/* Downward-pointing caret */}
             <span

@@ -8,6 +8,8 @@ interface BubbleSlot {
   x: number;
   y: number;
   text: string;
+  source?: string;
+  year?: number;
   visible: boolean;
 }
 
@@ -32,6 +34,8 @@ export function OverlayManager({ bubbleSlots }: OverlayManagerProps) {
           <SpeechBubble
             key={slot.id}
             text={slot.text}
+            source={slot.source}
+            year={slot.year}
             x={slot.x}
             y={slot.y}
             visible={slot.visible}

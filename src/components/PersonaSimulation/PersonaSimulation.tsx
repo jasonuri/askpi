@@ -6,7 +6,7 @@ import { useSimulation } from "./hooks/useSimulation";
 import { useChatEvents } from "./hooks/useChatEvents";
 import { useMouseInteraction } from "./hooks/useMouseInteraction";
 import { OverlayManager } from "./ui/OverlayManager";
-import insightPhrases from "./data/insights.json";
+import { fetchInsights, type Insight } from "@/lib/insights";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +15,8 @@ interface BubbleSlot {
   x: number;
   y: number;
   text: string;
+  source?: string;
+  year?: number;
   visible: boolean;
 }
 
@@ -68,8 +70,8 @@ function ndcToScreen(
 
 // ── Helper: pick a random phrase from insights ───────────────────────────────
 
-function randomPhrase(): string {
-  return insightPhrases[Math.floor(Math.random() * insightPhrases.length)];
+function randomPhrase(insights: Insight[]): Insight {
+  return insights[Math.floor(Math.random() * insights.length)];
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -94,6 +96,14 @@ function PersonaSimulationInner({ widgetRef }: PersonaSimulationProps) {
   }, []);
 
   const mouse = useMouseInteraction(containerRef, mouseEnabled);
+
+  // Insights state — fetched from Supabase on mount, fallback used until resolved
+  const [insights, setInsights] = useState<Insight[]>([
+    { text: "Analyzing audiences...", source: "AskPhi", year: 2026 },
+  ]);
+  useEffect(() => {
+    fetchInsights().then(setInsights);
+  }, []);
 
   // Speech bubble state
   const [bubbles, setBubbles] = useState<BubbleSlot[]>([]);
@@ -200,11 +210,14 @@ function PersonaSimulationInner({ widgetRef }: PersonaSimulationProps) {
       const { x, y } = ndcToScreen(ndc, containerRect);
 
       const id = ++bubbleIdCounter;
+      const insight = randomPhrase(insights);
       const newBubble: BubbleSlot = {
         id,
         x,
         y,
-        text: randomPhrase(),
+        text: insight.text,
+        source: insight.source,
+        year: insight.year,
         visible: true,
       };
 
@@ -220,7 +233,7 @@ function PersonaSimulationInner({ widgetRef }: PersonaSimulationProps) {
 
       scheduleBubble();
     }, delay);
-  }, [refs]);
+  }, [refs, insights]);
 
   useEffect(() => {
     scheduleBubble();

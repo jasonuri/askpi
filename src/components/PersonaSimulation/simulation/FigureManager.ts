@@ -236,9 +236,7 @@ export class FigureManager {
     const colorHex = FIGURE_COLORS[id % FIGURE_COLORS.length];
     const color = new THREE.Color(colorHex);
 
-    const x = this.randomEdgeBiased(GROUND_BOUNDS.minX, GROUND_BOUNDS.maxX);
-    const z = this.randomEdgeBiased(GROUND_BOUNDS.minZ, GROUND_BOUNDS.maxZ);
-    const position = new THREE.Vector3(x, 0, z);
+    const position = this.randomRingPosition();
 
     const fig = new Figure(id, color, position, this.scene);
 
@@ -251,22 +249,34 @@ export class FigureManager {
   }
 
   /**
-   * U-shaped distribution — biases spawn positions toward the edges of
-   * the ground plane so the centre stays clear for the widget.
+   * Area-weighted annular spawn — places figures in a ring in the outer
+   * portion of the ground plane so the centre stays clear for the widget.
+   *
+   * Works in normalised [-1,1] space (matching the elliptical aspect ratio)
+   * then scales back to world coordinates.
    */
-  private randomEdgeBiased(min: number, max: number): number {
-    const range = max - min;
-    const center = (min + max) / 2;
-    let val = Math.random() * range + min;
+  private randomRingPosition(): THREE.Vector3 {
+    const RING_RADIUS_MIN_NORM = 0.55;
+    const RING_RADIUS_MAX_NORM = 0.92;
 
-    if (Math.random() < 0.6) {
-      if (val > center) {
-        val = center + (val - center) * 1.4;
-      } else {
-        val = center - (center - val) * 1.4;
-      }
-    }
+    const rMin = RING_RADIUS_MIN_NORM;
+    const rMax = RING_RADIUS_MAX_NORM;
 
-    return Math.max(min, Math.min(max, val));
+    // Area-weighted sampling prevents pileup at the inner edge
+    const u = Math.random();
+    const r = Math.sqrt(u * (rMax * rMax - rMin * rMin) + rMin * rMin);
+
+    const angle = Math.random() * Math.PI * 2;
+    const nx = r * Math.cos(angle); // normalised x in [-1, 1]
+    const nz = r * Math.sin(angle); // normalised z in [-1, 1]
+
+    // Scale to world space using ground half-extents
+    const halfX = (GROUND_BOUNDS.maxX - GROUND_BOUNDS.minX) / 2; // 16
+    const halfZ = (GROUND_BOUNDS.maxZ - GROUND_BOUNDS.minZ) / 2; // 10
+
+    const x = Math.max(GROUND_BOUNDS.minX, Math.min(GROUND_BOUNDS.maxX, nx * halfX));
+    const z = Math.max(GROUND_BOUNDS.minZ, Math.min(GROUND_BOUNDS.maxZ, nz * halfZ));
+
+    return new THREE.Vector3(x, 0, z);
   }
 }
