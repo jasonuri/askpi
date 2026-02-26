@@ -18,7 +18,7 @@ export function Confirmation({ onReset }: ConfirmationProps) {
         Your full report is on its way
       </h3>
       <p className="text-sm text-muted-foreground mb-6">
-        Check your inbox — you'll receive a detailed audience analysis with
+        Check your inbox — you'll receive a detailed ICP analysis with audience
         segments, gap analysis, and a messaging playbook.
       </p>
       <button
@@ -26,7 +26,7 @@ export function Confirmation({ onReset }: ConfirmationProps) {
         className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
       >
         <RotateCcw className="h-4 w-4" />
-        Analyse another website
+        Analyze another website
       </button>
     </div>
   );

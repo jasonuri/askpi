@@ -74,7 +74,7 @@ export function IcpWidget() {
         ...prev,
         {
           role: "assistant",
-          content: `Who do you think ${displayDomain}'s target audience is?`,
+          content: `Who do you think ${displayDomain}'s ideal customer is?`,
         },
         { role: "user", content: audience },
       ]);
@@ -155,7 +155,7 @@ export function IcpWidget() {
             >
               <ChatBubble
                 role="assistant"
-                content={`Who do you think ${displayDomain}'s target audience is?`}
+                content={`Who do you think ${displayDomain}'s ideal customer is?`}
               />
             </motion.div>
           )}
@@ -220,10 +220,13 @@ export function IcpWidget() {
           >
             <ChatInput
               placeholder="Enter your website URL..."
-              buttonLabel="Analyse"
+              buttonLabel="Decode"
               onSubmit={handleUrlSubmit}
               error={inputError}
             />
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              Free preview — no signup required
+            </p>
           </motion.div>
         )}
 
@@ -237,8 +240,8 @@ export function IcpWidget() {
             className="mt-4"
           >
             <ChatInput
-              placeholder="e.g. Health-conscious millennials in the UK"
-              buttonLabel="Analyse"
+              placeholder="e.g. Series B SaaS founders scaling their marketing team"
+              buttonLabel="Analyze"
               onSubmit={handleAudienceSubmit}
               error={inputError}
               autoFocus

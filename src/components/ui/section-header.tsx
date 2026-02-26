@@ -21,7 +21,7 @@ export function SectionHeader({
         {label}
       </p>
       {title && (
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-normal tracking-tight text-foreground">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif font-bold text-foreground">
           {title}
         </h2>
       )}

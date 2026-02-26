@@ -9,8 +9,8 @@ import { CALENDAR_URL } from "@/lib/constants";
 const navItems = [
   { label: "About", href: "/about" },
   { label: "How It Works", href: "/#how-it-works" },
-  { label: "Who It's For", href: "/#use-cases" },
-  { label: "The Sprint", href: "/#service" },
+  { label: "Use Cases", href: "/#use-cases" },
+  { label: "Service", href: "/#service" },
   { label: "FAQ", href: "/#faq" },
 ];
 
@@ -33,7 +33,7 @@ export function Header() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
-        <Link href="/" className="font-serif font-normal tracking-tight text-2xl text-foreground">
+        <Link href="/" className="font-serif font-bold text-2xl text-foreground">
           AskPhi
         </Link>
 

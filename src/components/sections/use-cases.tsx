@@ -1,134 +1,73 @@
-"use client";
+import { Shield, Palette, Zap } from "lucide-react";
+import { SectionHeader } from "@/components/ui/section-header";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-
-type TabKey = "startups" | "agencies" | "enterprise";
-
-interface TabData {
-  label: string;
-  problem: string;
-  useCases: string[];
-  quote: string;
-  attribution: string;
-}
-
-const tabs: Record<TabKey, TabData> = {
-  startups: {
-    label: "Startups",
-    problem:
-      "You've built for an audience you defined in a pitch deck. Now you need to validate that ICP against real decision behaviour before your next raise or launch.",
-    useCases: [
-      "Pressure-test your ICP against behavioural evidence, not assumptions",
-      "Discover the decision triggers your landing page is missing",
-      "Build positioning that speaks to why people switch, not just what they want",
-    ],
-    quote:
-      "We thought we knew our audience. The sprint showed us we were solving the right problem for the wrong reason.",
-    attribution: "Founder, Handicaddie",
+const useCases = [
+  {
+    icon: Shield,
+    title: "Audience Definition & Validation",
+    segment: "Startups",
+    description:
+      "Pressure-test your target audience against real decision behaviour. Discover whether your ICP matches reality — or just internal assumptions. Sharpen your GTM with behavioural evidence.",
+    color: "bg-violet-50 text-violet-600",
   },
-  agencies: {
-    label: "Agencies",
-    problem:
-      "Your clients expect audience insight that goes beyond demographics. You need research you can deliver fast, brand, and build strategy on.",
-    useCases: [
-      "Deliver behavioural audience research your clients can act on",
-      "Add a decision-science layer to existing strategy work",
-      "White-label the deliverables under your own brand",
-    ],
-    quote:
-      "It gave us a research depth we couldn't produce internally — and our client couldn't tell it wasn't a 6-week project.",
-    attribution: "Strategy Director, Agency Partner",
+  {
+    icon: Palette,
+    title: "Behavioural Audience Research",
+    segment: "Agencies",
+    description:
+      "Go beyond stated preferences to map the forces that shape audience decisions. Deliver research your clients can act on — grounded in behavioural science, not just survey data.",
+    color: "bg-emerald-50 text-emerald-600",
   },
-  enterprise: {
-    label: "Enterprise",
-    problem:
-      "You're making audience-dependent decisions at scale — commissioning, campaigns, product strategy — but your segmentation is still geography and salary.",
-    useCases: [
-      "Inform strategy with decision-force mapping, not just demographics",
-      "Reach hard-to-access audiences without expensive panel recruitment",
-      "Get actionable insight in days, not the 3-4 weeks your current process takes",
-    ],
-    quote:
-      "We'd been segmenting by geography and income for years. This showed us the behavioural segments we were actually dealing with.",
-    attribution: "Audience Lead, Major UK Broadcaster",
+  {
+    icon: Zap,
+    title: "Strategic Audience Intelligence",
+    segment: "Enterprise",
+    description:
+      "Inform strategy with deep audience intelligence. Understand the triggers, motivations, and barriers that drive your audience — so every campaign, brief, or pitch is built on evidence.",
+    color: "bg-cyan-50 text-cyan-600",
   },
-};
-
-const tabKeys: TabKey[] = ["startups", "agencies", "enterprise"];
+];
 
 export function UseCases() {
-  const [active, setActive] = useState<TabKey>("startups");
-  const data = tabs[active];
-
   return (
-    <section id="use-cases" className="w-full px-4 py-24">
+    <section id="use-cases" className="w-full px-4 py-24 bg-muted/50">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="space-y-4 mb-12">
-          <p className="text-sm font-medium text-primary uppercase tracking-widest">
-            Who it&apos;s for
-          </p>
-          <h2 className="text-3xl md:text-4xl font-serif font-normal tracking-tight text-foreground">
-            Built for teams that make audience-dependent decisions.
-          </h2>
-        </div>
-
-        {/* Tab pills */}
-        <div className="flex gap-2 mb-10 overflow-x-auto pb-2">
-          {tabKeys.map((key) => (
-            <button
-              key={key}
-              onClick={() => setActive(key)}
-              className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                active === key
-                  ? "bg-foreground text-card"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tabs[key].label}
-            </button>
-          ))}
-        </div>
-
-        {/* Panel */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
-            className="grid md:grid-cols-5 gap-10"
-          >
-            {/* Text — 3/5 */}
-            <div className="md:col-span-3 space-y-6">
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {data.problem}
-              </p>
-              <ul className="space-y-3">
-                {data.useCases.map((uc) => (
-                  <li key={uc} className="flex items-start gap-3">
-                    <span className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                    <span className="text-foreground">{uc}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Case study card — 2/5 */}
-            <div className="md:col-span-2">
-              <div className="bg-muted/50 border border-border rounded-xl p-6 space-y-4">
-                <p className="text-foreground leading-relaxed italic">
-                  &ldquo;{data.quote}&rdquo;
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  — {data.attribution}
+        <SectionHeader
+          label="Use Cases"
+          title="Built for How You Work"
+          description="Whether you're sharpening a go-to-market, delivering audience research for clients, or informing enterprise strategy — AskPhi adapts to your context."
+          descriptionClassName="text-lg max-w-2xl mx-auto"
+        />
+        <div className="grid md:grid-cols-3 gap-6">
+          {useCases.map((uc, i) => {
+            const Icon = uc.icon;
+            return (
+              <div
+                key={i}
+                className="bg-card rounded-xl border border-border p-8 space-y-4 hover:shadow-md transition-shadow"
+              >
+                <div
+                  className={`w-12 h-12 rounded-lg flex items-center justify-center ${uc.color}`}
+                >
+                  <Icon className="h-6 w-6" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {uc.title}
+                  </h3>
+                  {"segment" in uc && (
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      {uc.segment}
+                    </span>
+                  )}
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  {uc.description}
                 </p>
               </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

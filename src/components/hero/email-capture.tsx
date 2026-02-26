@@ -53,7 +53,7 @@ export function EmailCapture({
   return (
     <div className="mt-4 bg-secondary/50 rounded-xl border border-border p-6">
       <p className="text-sm font-medium text-foreground mb-1">
-        Get the full audience intelligence report
+        Get the full ICP analysis report
       </p>
       <p className="text-xs text-muted-foreground mb-4">
         We'll email you a detailed report with audience segments, gap analysis, and messaging playbook.
